@@ -1,9 +1,0 @@
-/* app/globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Opcional: mejora la tipografía */
-html {
-  font-family: system-ui, sans-serif;
-}
