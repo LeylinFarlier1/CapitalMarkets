@@ -1,6 +1,6 @@
 "use client"; // ← Importante para Next.js
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ArrowUpDown, Loader2, HelpCircle } from "lucide-react";
 
@@ -42,8 +42,12 @@ interface OptionChainProps {
 }
 
 export default function OptionChain({ data }: OptionChainProps) {
-  const [selectedExp, setSelectedExp] = useState(data.expirations[0]);
+  const [selectedExp, setSelectedExp] = useState(data.expirations[0] ?? "");
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
+
+  useEffect(() => {
+    setSelectedExp(data.expirations[0] ?? "");
+  }, [data.expirations]);
 
   const filteredOptions = useMemo(() => {
     return data.options.filter((o) => o.expiration === selectedExp);
@@ -65,6 +69,18 @@ export default function OptionChain({ data }: OptionChainProps) {
     return map;
   }, [filteredOptions]);
 
+  const getSortableValue = (option: Option | undefined, key: string) => {
+    const rawValue = option?.[key as keyof Option];
+    if (rawValue === null || rawValue === undefined) return null;
+
+    if (typeof rawValue === "string") {
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? parsed : rawValue;
+    }
+
+    return rawValue;
+  };
+
   const sortedStrikes = useMemo(() => {
     if (!sortConfig) return strikes;
 
@@ -75,7 +91,7 @@ export default function OptionChain({ data }: OptionChainProps) {
       const value =
         sortConfig.key === "strike"
           ? Number(strike)
-          : call?.[sortConfig.key as keyof Option] ?? put?.[sortConfig.key as keyof Option] ?? 0;
+          : getSortableValue(call, sortConfig.key) ?? getSortableValue(put, sortConfig.key) ?? 0;
 
       return { strike, value };
     });
@@ -99,9 +115,12 @@ export default function OptionChain({ data }: OptionChainProps) {
 
   const formatNum = (n: number | null | undefined, decimals = 4) =>
     n === null || n === undefined ? "—" : n.toFixed(decimals);
-  const formatPrice = (n: string | null | undefined) => (n ? Number(n).toFixed(2) : "—");
-  const formatIV = (n: number | null | undefined) => (n ? (n * 100).toFixed(2) + "%" : "—");
-  const formatDelta = (n: number | null | undefined) => (n ? n.toFixed(3) : "—");
+  const formatPrice = (n: string | null | undefined) =>
+    n === null || n === undefined ? "—" : Number(n).toFixed(2);
+  const formatIV = (n: number | null | undefined) =>
+    n === null || n === undefined ? "—" : (n * 100).toFixed(2) + "%";
+  const formatDelta = (n: number | null | undefined) =>
+    n === null || n === undefined ? "—" : n.toFixed(3);
 
   if (!data || data.options.length === 0) {
     return (
